@@ -9,9 +9,9 @@ namespace RiaParser
 {
     class WordFilter
     {
-        private List<string> prepositions;
-        private List<string> pronouns;
-        private List<string> conjunctions;
+        private HashSet<string> prepositions;
+        private HashSet<string> pronouns;
+        private HashSet<string> conjunctions;
 
         public WordFilter()
         {
@@ -33,9 +33,9 @@ namespace RiaParser
             return false;
         }
 
-        private List<string> ReadWords(string fileName)
+        private HashSet<string> ReadWords(string fileName)
         {
-            return File.ReadAllLines(fileName).ToList();
+            return new HashSet<string>(File.ReadAllLines(fileName));
         }
 
 
