@@ -13,31 +13,21 @@ namespace RiaParser
     {
         public static string GetPageByUrl(string urlAddress)
         {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(urlAddress);
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            if (response.StatusCode == HttpStatusCode.OK)
+            var request = (HttpWebRequest)WebRequest.Create(urlAddress);
+            using (var response = (HttpWebResponse)request.GetResponse())
             {
-                Stream recieveStream = response.GetResponseStream();
-                StreamReader readStream = null;
-                if (response.CharacterSet == null)
+                if(response.StatusCode == HttpStatusCode.OK)
                 {
-                    readStream = new StreamReader(recieveStream);
-                }
-                else
-                {
-                    readStream = new StreamReader(recieveStream, Encoding.GetEncoding(response.CharacterSet));
-                }
-                string data = readStream.ReadToEnd();
+                    var encoding = Encoding.GetEncoding(response.CharacterSet);
 
-                response.Close();
-                readStream.Close();
-
-                //using (StreamWriter fileStream = File.AppendText(filePath))
-                //{
-                //    fileStream.Write(data);
-                //    fileStream.Close();
-                //}
-                return data;
+                    using (var responseStream = response.GetResponseStream())
+                    {
+                        using (var reader = new StreamReader(responseStream, encoding))
+                        {
+                            return reader.ReadToEnd();
+                        }
+                    }
+                }
             }
             return null;
         }
@@ -45,41 +35,32 @@ namespace RiaParser
         public static string GenerateLink(DateTime dateTime)
         {
             var url = @"https://ria.ru/services/lenta/more.html?date=";
-            var date = dateTime.ToString("yyyyMMdd");
-            var time = dateTime.ToString("HHmmss");
-            return url + date + "T" + time;
+            return $"{url}{dateTime:yyyyMMddTHHmmss}";
         }
 
         public static IEnumerable<string> GetTodayNews()
         {
-            var link = GenerateLink(DateTime.Now);
-            var data = GetPageByUrl(link);
-            var news = NewsParser.ParseNewsList(data);
-            var time = NewsParser.ParseTimeOfNews(news.Last());
-
-            while (time.Day == DateTime.Today.Day)
+            var lastTime = DateTime.Now;
+            var today = DateTime.Today.Day;
+            var newsParser = new NewsParser();
+            var newsHtml = new HashSet<string>();
+            do
             {
-                //System.Threading.Thread.Sleep(1000);
-                link = GenerateLink(time);
-                data = GetPageByUrl(link);
-                var temp = NewsParser.ParseNewsList(data);
-                foreach (var n in temp)
+                var link = GenerateLink(DateTime.Now);
+                var data = GetPageByUrl(link);
+                var page = newsParser.ParseNewsList(data);
+                foreach(var x in page)
                 {
-                    if (!news.Contains(n))
+                    if (!newsHtml.Contains(x))
                     {
-                        news.Add(n);
+                        newsHtml.Add(x);
                     }
                 }
-                time = NewsParser.ParseTimeOfNews(news.Last());
+                lastTime = newsParser.ParseTimeOfNews(page.Last());
             }
+            while (lastTime.Day == today);
 
-            while (NewsParser.ParseTimeOfNews(news.First()).Day == DateTime.Today.Day)
-            {
-                yield return news.First();
-                news.Remove(news.First());
-            }
-            yield break;
-            //return news;
+            return newsHtml.Where(x => newsParser.ParseTimeOfNews(x).Day == today);
         }
     }
 }

@@ -11,9 +11,15 @@ namespace RiaParser
 {
     class NewsParser
     {
-        public static List<string> ParseNewsList(string htmlPage)
+        private readonly HtmlParser parser;
+
+        public NewsParser()
         {
-            var parser = new HtmlParser();
+            parser = new HtmlParser();
+        }
+
+        public List<string> ParseNewsList(string htmlPage)
+        {
             var page = parser.ParseDocument(htmlPage);
             var news = page.All
                            .Where(x => x.ClassName == "list-item")
@@ -22,9 +28,8 @@ namespace RiaParser
             return news;
         }
 
-        public static DateTime ParseTimeOfNews(string htmlNews)
+        public DateTime ParseTimeOfNews(string htmlNews)
         {
-            var parser = new HtmlParser();
             var news = parser.ParseDocument(htmlNews);
             var time = news.All
                            .Where(x => x.ClassName == "list-item__date")
@@ -32,7 +37,7 @@ namespace RiaParser
                            .First()
                            .Split(':');
             DateTime dateTime;
-            if (time[0].StartsWith("Вчера"))
+            if (time[0].StartsWith("Вчера") || int.Parse(time[0]) > DateTime.Now.Hour)
             {
                 dateTime = new DateTime(DateTime.Today.Year,
                                         DateTime.Today.Month,
@@ -53,9 +58,8 @@ namespace RiaParser
             return dateTime;
         }
 
-        public static string ParseHrefOfNews(string htmlNews)
+        public string ParseHrefOfNews(string htmlNews)
         {
-            var parser = new HtmlParser();
             var news = parser.ParseDocument(htmlNews);
             var href = news.All
                            .Where(x => x.ClassName == "share")
@@ -64,9 +68,8 @@ namespace RiaParser
             return href;
         }
 
-        public static string ParseTextOfNews(string htmlPage)
+        public string ParseTextOfNews(string htmlPage)
         {
-            var parser = new HtmlParser();
             var news = parser.ParseDocument(htmlPage);
             var text = news.All
                            .Where(x => x.ClassName == "article__text")
@@ -74,21 +77,17 @@ namespace RiaParser
             var fullText = new StringBuilder();
             foreach (var textblock in text)
             {
-                fullText.Append(" ");
-                fullText.Append(textblock);
+                fullText.AppendLine(textblock);
             }
             return Regex.Replace(fullText.ToString(), @"<[^>]*>", " ");
         }
 
-        public static void CreateDictionary(string textOfNews, Dictionary<string, int> newsDictionary)
+        public static void CalculateStats(string textOfNews, WordFilter filter, Dictionary<string, int> newsDictionary)
         {
-            //var newsDictionary = new Dictionary<string, int>();
-            var noPunctuationNews = string.Concat(textOfNews.Where(c => !char.IsPunctuation(c))
-                                              .Select(c => char.ToLower(c)));
-            var wordsArray = noPunctuationNews.Trim().Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
+            var wordsArray = NormalizeText(textOfNews);
             foreach (var word in wordsArray)
             {
-                if (WordFilter.IsUseless(word))
+                if (filter.IsUseless(word))
                 {
                     continue;
                 }
@@ -101,29 +100,20 @@ namespace RiaParser
                     newsDictionary.Add(word, 1);
                 }
             }
-
-            //return newsDictionary;
         }
 
-        public static Dictionary<string, int> GetSortedDictionary(Dictionary<string, int> newsDictionary)
+        private static string[] NormalizeText(string text)
         {
-            var tempList = newsDictionary.ToList();
-            tempList.Sort((pair1, pair2) => pair1.Value.CompareTo(pair2.Value));
-            var resultDictionary = new Dictionary<string, int>();
-            for (var i = 0; i < 100; i++)
-            {
-                if (tempList.Count > 0)
-                {
-                    var last = tempList.Last();
-                    resultDictionary.Add(last.Key, last.Value);
-                    tempList.Remove(last);
-                }
-                else
-                {
-                    break;
-                }
-            }
-            return resultDictionary;
+            var noPunctuationNews = string.Concat(text.Where(c => !char.IsPunctuation(c))
+                                                            .Select(c => char.ToLower(c)));
+            var wordsArray = noPunctuationNews.Trim().Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
+            return wordsArray;
+        }
+
+        public static IEnumerable<KeyValuePair<string, int>> GetSortedDictionary(Dictionary<string, int> newsDictionary)
+        {
+            return newsDictionary.OrderByDescending(kv => kv.Value)
+                                 .Take(100);
         }
 
     }

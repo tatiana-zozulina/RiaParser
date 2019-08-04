@@ -12,25 +12,24 @@ namespace RiaParser
         static void Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
-            var dict = new Dictionary<string, int>();
-            var temp = HtmlTools.GetTodayNews();
-            foreach (var t in temp)
+            var frequencies = new Dictionary<string, int>();
+            var newsParser = new NewsParser();
+            var filter = new WordFilter();
+            var newsPreviewDivs = HtmlTools.GetTodayNews();
+            foreach (var newsPreview in newsPreviewDivs)
             {
-                var href = NewsParser.ParseHrefOfNews(t);
-                var time = NewsParser.ParseTimeOfNews(t);
+                var href = newsParser.ParseHrefOfNews(newsPreview);
                 var htmlNews = HtmlTools.GetPageByUrl(href);
-                var innerNews = NewsParser.ParseTextOfNews(htmlNews);
-                NewsParser.CreateDictionary(innerNews, dict);
+                var content = newsParser.ParseTextOfNews(htmlNews);
+                NewsParser.CalculateStats(content, filter, frequencies);
             }
-            var result = NewsParser.GetSortedDictionary(dict);
+            var result = NewsParser.GetSortedDictionary(frequencies);
             foreach (var keyValuePair in result)
             {
                 Console.Write(keyValuePair.Key);
-                Console.Write(":");
+                Console.Write(" ");
                 Console.WriteLine(keyValuePair.Value);
             }
-            Console.Write("END");
-            Console.ReadKey();
         }
     }
 }

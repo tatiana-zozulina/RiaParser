@@ -20,14 +20,13 @@ namespace RiaParser
             conjunctions = ReadWords("Conjunctions.txt");
         }
 
-        public static bool IsUseless(string word)
+        public bool IsUseless(string word)
         {
-            var filter = new WordFilter();
             if (word.Length <= 2 
                 || word.All(x => char.IsDigit(x)) 
-                || filter.prepositions.Contains(word)
-                || filter.pronouns.Contains(word)
-                || filter.conjunctions.Contains(word))
+                || prepositions.Contains(word)
+                || pronouns.Contains(word)
+                || conjunctions.Contains(word))
             {
                 return true;
             }
