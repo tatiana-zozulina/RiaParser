@@ -4,8 +4,6 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Globalization;
-using System.Threading.Tasks;
 
 namespace RiaParser
 {
@@ -38,29 +36,33 @@ namespace RiaParser
             return $"{url}{dateTime:yyyyMMddTHHmmss}";
         }
 
-        public static IEnumerable<string> GetTodayNews()
+        public static IEnumerable<NewsItem> GetTodayNews()
         {
             var lastTime = DateTime.Now;
             var today = DateTime.Today.Day;
-            var newsParser = new NewsParser();
-            var newsHtml = new HashSet<string>();
+            var parser = new NewsParser();
+            var newsHtml = new HashSet<NewsItem>();
             do
             {
-                var link = GenerateLink(DateTime.Now);
-                var data = GetPageByUrl(link);
-                var page = newsParser.ParseNewsList(data);
-                foreach(var x in page)
+                var href = GenerateLink(lastTime);
+                var data = GetPageByUrl(href);
+                var page = parser.ParseNewsList(data);
+                foreach(var singlePreview in page)
                 {
-                    if (!newsHtml.Contains(x))
+                    var link = parser.ParseHrefOfNews(singlePreview);
+                    lastTime = parser.ParseTimeOfNews(singlePreview);
+                    var htmlPage = GetPageByUrl(link);
+                    var item = new NewsItem(link, lastTime);
+                    item.DownloadContent(parser, htmlPage);
+                    if (!newsHtml.Contains(item))
                     {
-                        newsHtml.Add(x);
+                        newsHtml.Add(item);
                     }
                 }
-                lastTime = newsParser.ParseTimeOfNews(page.Last());
             }
             while (lastTime.Day == today);
 
-            return newsHtml.Where(x => newsParser.ParseTimeOfNews(x).Day == today);
+            return newsHtml.Where(x => x.dateTime.Day == today);
         }
     }
 }

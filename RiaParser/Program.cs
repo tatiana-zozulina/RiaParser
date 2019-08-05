@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Net;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RiaParser
 {
@@ -13,15 +10,13 @@ namespace RiaParser
         {
             Console.OutputEncoding = Encoding.UTF8;
             var frequencies = new Dictionary<string, int>();
-            var newsParser = new NewsParser();
+            var parser = new NewsParser();
             var filter = new WordFilter();
-            var newsPreviewDivs = HtmlTools.GetTodayNews();
-            foreach (var newsPreview in newsPreviewDivs)
+            Console.WriteLine("Getting today's news.");
+            var news = HtmlTools.GetTodayNews();
+            foreach (var item in news)
             {
-                var href = newsParser.ParseHrefOfNews(newsPreview);
-                var htmlNews = HtmlTools.GetPageByUrl(href);
-                var content = newsParser.ParseTextOfNews(htmlNews);
-                NewsParser.CalculateStats(content, filter, frequencies);
+                NewsParser.CalculateStats(item, filter, frequencies);
             }
             var result = NewsParser.GetSortedDictionary(frequencies);
             foreach (var keyValuePair in result)
@@ -30,6 +25,7 @@ namespace RiaParser
                 Console.Write(" ");
                 Console.WriteLine(keyValuePair.Value);
             }
+            Console.ReadKey();
         }
     }
 }

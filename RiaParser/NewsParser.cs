@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using AngleSharp;
 using AngleSharp.Html.Parser;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace RiaParser
 {
@@ -82,9 +80,9 @@ namespace RiaParser
             return Regex.Replace(fullText.ToString(), @"<[^>]*>", " ");
         }
 
-        public static void CalculateStats(string textOfNews, WordFilter filter, Dictionary<string, int> newsDictionary)
+        public static void CalculateStats(NewsItem item, WordFilter filter, Dictionary<string, int> newsDictionary)
         {
-            var wordsArray = NormalizeText(textOfNews);
+            var wordsArray = NormalizeText(item.Text);
             foreach (var word in wordsArray)
             {
                 if (filter.IsUseless(word))
