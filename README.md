@@ -5,4 +5,4 @@ Console Application (C#, .net):
 - gathers words' statistics,
 - prints statistics on the Console.
 
-Lunch with no parameters.
+Launch with no parameters.
